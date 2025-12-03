@@ -45,8 +45,10 @@ async def analyze(payload: dict):
         raise HTTPException(status_code=422, detail="city_name required")
     coords = await get_coordinates(city_name)
     if not coords:
-        raise HTTPException(status_code=404, detail="city not found")
+        raise HTTPException(status_code=504, detail="geocoding timeout or city not found")
     current = await fetch_current_weather(coords["lat"], coords["lon"])
+    if not current:
+        raise HTTPException(status_code=504, detail="current weather fetch timeout")
     hist_df = await fetch_historical_training_data(coords["lat"], coords["lon"])
     model, metrics = load_model_for_city(city_name)
     if model is None:
