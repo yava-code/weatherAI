@@ -9,3 +9,10 @@ async def test_health():
         resp = await ac.get("/health")
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
+
+@pytest.mark.asyncio
+async def test_analyze_validation():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.post("/analyze", json={})
+    assert resp.status_code == 422
