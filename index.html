@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Prediction API</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max_width: 800px;
+        margin: 0 auto;
+      }
+      h1 {
+        text-align: center;
+        color: #42b883;
+      }
+      .card {
+        background-color: #2d2d2d;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+      }
+      .stat-item {
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #42b883;
+      }
+      .stat-label {
+        color: #aaa;
+      }
+      button {
+        background-color: #42b883;
+        color: #1e1e1e;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: bold;
+        display: block;
+        margin: 20px auto;
+      }
+      button:hover {
+        background-color: #3aa876;
+      }
+      canvas {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <h1>Weather Prediction API</h1>
+
+      <div class="card">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">{{ stats.count }}</div>
+            <div class="stat-label">Records Stored</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ stats.average_temperature.toFixed(2) }}°C
+            </div>
+            <div class="stat-label">Avg Temperature</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="text-align: center">24h Temperature Forecast</h2>
+        <div v-if="loading">Loading prediction...</div>
+        <div v-else-if="error" style="color: #ff6b6b; text-align: center">
+          {{ error }}
+        </div>
+        <canvas v-show="!loading && !error" id="predictionChart"></canvas>
+        <button @click="fetchPrediction">Refresh Prediction</button>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, onMounted } = Vue;
+
+      createApp({
+        setup() {
+          const stats = ref({ count: 0, average_temperature: 0 });
+          const loading = ref(false);
+          const error = ref(null);
+          let chartInstance = null;
+
+          const fetchStats = async () => {
+            try {
+              const response = await axios.get("/stats");
+              stats.value = response.data;
+            } catch (e) {
+              console.error("Error fetching stats:", e);
+            }
+          };
+
+          const fetchPrediction = async () => {
+            loading.value = true;
+            error.value = null;
+            try {
+              const response = await axios.get("/predict");
+              renderChart(response.data);
+            } catch (e) {
+              console.error("Error fetching prediction:", e);
+              error.value =
+                "Failed to fetch prediction. Ensure enough data exists.";
+            } finally {
+              loading.value = false;
+            }
+          };
+
+          const renderChart = (data) => {
+            const ctx = document
+              .getElementById("predictionChart")
+              .getContext("2d");
+
+            if (chartInstance) {
+              chartInstance.destroy();
+            }
+
+            const labels = data.timestamps.map((t) =>
+              new Date(t).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            );
+
+            chartInstance = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels: labels,
+                datasets: [
+                  {
+                    label: "Predicted Temperature (°C)",
+                    data: data.temperatures,
+                    borderColor: "#42b883",
+                    backgroundColor: "rgba(66, 184, 131, 0.2)",
+                    tension: 0.4,
+                    fill: true,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    labels: { color: "#e0e0e0" },
+                  },
+                },
+                scales: {
+                  y: {
+                    grid: { color: "#444" },
+                    ticks: { color: "#aaa" },
+                  },
+                  x: {
+                    grid: { color: "#444" },
+                    ticks: { color: "#aaa" },
+                  },
+                },
+              },
+            });
+          };
+
+          onMounted(() => {
+            fetchStats();
+            fetchPrediction();
+          });
+
+          return {
+            stats,
+            loading,
+            error,
+            fetchPrediction,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
