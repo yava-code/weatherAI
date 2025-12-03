@@ -57,6 +57,7 @@ async def train_model():
         "r2": round(r2, 4),
         "last_trained": time.strftime("%Y-%m-%d %H:%M:%S"),
         "feature_importance": dict(zip(X.columns, model.feature_importances_)),
+        "features": list(X.columns),
     }
     model_path, metrics_path = _paths("global")
     with open(metrics_path, "w") as f:
@@ -74,7 +75,10 @@ def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str
     dt_struct = time.localtime(timestamp)
     hour = dt_struct.tm_hour
     X = pd.DataFrame([[timestamp, hour, humidity, wind_speed, city_code]], columns=["timestamp", "hour", "humidity", "wind_speed", "city_code"])
-    pred = model.predict(X)[0]
+    try:
+        pred = model.predict(X)[0]
+    except ValueError:
+        return None
     return float(pred)
 
 def train_model_for_city(city_name: str, df: pd.DataFrame):
@@ -95,6 +99,7 @@ def train_model_for_city(city_name: str, df: pd.DataFrame):
         "r2": round(r2, 4),
         "last_trained": time.strftime("%Y-%m-%d %H:%M:%S"),
         "feature_importance": dict(zip(X.columns, model.feature_importances_)),
+        "features": list(X.columns),
     }
     slug = _slug(city_name)
     model_path, metrics_path = _paths(slug)

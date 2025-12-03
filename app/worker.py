@@ -47,6 +47,19 @@ def global_monitor_task():
         except Exception:
             continue
 
+@celery_app.task
+def monitor_popular_cities_task():
+    cities = ["London", "Warsaw", "Berlin", "Paris", "New York"]
+    for city in cities:
+        try:
+            coords = asyncio.run(get_coordinates(city))
+            if not coords:
+                continue
+            hist_df = asyncio.run(fetch_historical_training_data(coords["lat"], coords["lon"]))
+            train_model_for_city(city, hist_df)
+        except Exception:
+            continue
+
 celery_app.conf.beat_schedule = {
     "train-model-daily": {
         "task": "app.worker.train_model_task",
@@ -55,5 +68,9 @@ celery_app.conf.beat_schedule = {
     "global-monitor-hourly": {
         "task": "app.worker.global_monitor_task",
         "schedule": 60 * 60,
+    },
+    "monitor-popular-cities": {
+        "task": "app.worker.monitor_popular_cities_task",
+        "schedule": 30 * 60,
     },
 }
