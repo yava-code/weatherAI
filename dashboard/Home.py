@@ -1,5 +1,8 @@
 import streamlit as st
 import httpx
+import os
+import redis
+import psycopg2
 
 st.set_page_config(page_title="MeteoMind Enterprise", page_icon="⚡", layout="wide")
 
@@ -20,3 +23,25 @@ if run and city:
 st.divider()
 st.markdown("Or open Global Monitor for cached insights.")
 st.page_link("pages/2_Global_Monitor.py", label="Open Global Monitor")
+
+st.sidebar.header("System Status")
+db_ok = False
+redis_ok = False
+try:
+    dsn = os.getenv("DATABASE_URL", "postgresql://meteo:meteo_pass@db/meteo_mind")
+    conn = psycopg2.connect(dsn)
+    conn.close()
+    db_ok = True
+except Exception:
+    db_ok = False
+try:
+    rurl = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    r = redis.Redis.from_url(rurl)
+    r.ping()
+    redis_ok = True
+except Exception:
+    redis_ok = False
+st.sidebar.success("DB Connected") if db_ok else st.sidebar.error("DB Unavailable")
+st.sidebar.success("Redis Connected") if redis_ok else st.sidebar.error("Redis Unavailable")
+
+st.caption("Powered by MeteoMind Engine v1.0")

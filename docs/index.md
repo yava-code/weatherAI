@@ -1,22 +1,22 @@
-# MeteoMind: AI Weather Analytics
+# MeteoMind: Weather Intelligence Platform
 
-Добро пожаловать в документацию проекта MeteoMind.
+Welcome to the MeteoMind documentation.
 
-Это система полного цикла для сбора, анализа и предсказания погоды, построенная на микросервисной архитектуре.
+MeteoMind is an end‑to‑end system for collecting, analyzing and forecasting weather data, built with a service‑oriented architecture.
 
-## Архитектура
+## Architecture
 
 - Backend: FastAPI (Python 3.11)
 - Frontend: Streamlit
-- ML Engine: Scikit-Learn (RandomForest)
+- ML Engine: scikit‑learn (RandomForest)
 - Database: PostgreSQL
 - Async Tasks: Celery + Redis
 - Infrastructure: Docker Compose
 
-## Установка
+## Installation
 
 ```bash
-git clone https://github.com/yava-code/meteo-mind.git
+git clone https://github.com/your-username/meteo-mind.git
 cd meteo-mind
 docker-compose up --build
 ```

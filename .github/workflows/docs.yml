@@ -1,12 +1,14 @@
-name: Publish Docs
+name: Publish Pages
 on:
   push:
     branches:
       - main
 permissions:
-  contents: write
+  pages: write
+  id-token: write
+  contents: read
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,4 +16,24 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install mkdocs-material
-      - run: mkdocs gh-deploy --force
+      - name: Build MkDocs
+        run: mkdocs build
+      - name: Prepare Pages content
+        run: |
+          rm -rf public && mkdir -p public/docs
+          cp -r landing_page/* public/
+          cp -r site/* public/docs/
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
