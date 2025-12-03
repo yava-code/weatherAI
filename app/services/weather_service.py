@@ -1,7 +1,11 @@
+import logging
+from datetime import datetime
 import httpx
 from app.core.db import AsyncSessionLocal
 from app.models.weather import WeatherMeasurement
-from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 CITIES = {
     "Warsaw": {"lat": 52.2297, "lon": 21.0122},
@@ -18,8 +22,8 @@ async def fetch_weather_data():
                     params={
                         "latitude": coords["lat"],
                         "longitude": coords["lon"],
-                        "current": "temperature_2m,relative_humidity_2m,wind_speed_10m"
-                    }
+                        "current": "temperature_2m,relative_humidity_2m,wind_speed_10m",
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -30,14 +34,13 @@ async def fetch_weather_data():
                     timestamp=datetime.fromisoformat(current.get("time")),
                     temperature=current.get("temperature_2m"),
                     humidity=current.get("relative_humidity_2m"),
-                    wind_speed=current.get("wind_speed_10m")
+                    wind_speed=current.get("wind_speed_10m"),
                 )
 
                 async with AsyncSessionLocal() as session:
                     session.add(measurement)
                     await session.commit()
-                
-                print(f"Successfully fetched data for {city_name}")
 
+                logger.info(f"Successfully fetched data for {city_name}")
             except Exception as e:
-                print(f"Error fetching data for {city_name}: {e}")
+                logger.error(f"Error fetching data for {city_name}: {e}")
