@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 import joblib
 
 MODEL_PATH = os.getenv("MODEL_PATH", "weather_model.joblib")
+CITY_MAP = {"Warsaw": 0, "Berlin": 1, "London": 2}
 
 async def train_model():
     async with AsyncSessionLocal() as session:  # type: AsyncSession
@@ -22,24 +23,25 @@ async def train_model():
             "humidity": r.humidity,
             "wind_speed": r.wind_speed,
             "temperature": r.temperature,
-            "city": r.city,
+            "city_code": CITY_MAP.get(r.city, -1),
         }
         for r in rows
-        if r.temperature is not None and r.humidity is not None and r.wind_speed is not None
+        if r.temperature is not None and r.city in CITY_MAP
     ])
     if df.empty:
         return False
-    X = df[["timestamp", "humidity", "wind_speed"]]
+    X = df[["timestamp", "humidity", "wind_speed", "city_code"]]
     y = df["temperature"]
     model = RandomForestRegressor(n_estimators=200, random_state=42)
     model.fit(X, y)
     joblib.dump(model, MODEL_PATH)
     return True
 
-def predict_temp(timestamp: float, humidity: float, wind_speed: float) -> float:
+def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str) -> float:
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError("Model not trained")
     model = joblib.load(MODEL_PATH)
-    X = pd.DataFrame([[timestamp, humidity, wind_speed]], columns=["timestamp", "humidity", "wind_speed"])
+    city_code = CITY_MAP.get(city, 0)
+    X = pd.DataFrame([[timestamp, humidity, wind_speed, city_code]], columns=["timestamp", "humidity", "wind_speed", "city_code"])
     pred = model.predict(X)[0]
     return float(pred)
