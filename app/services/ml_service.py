@@ -16,15 +16,41 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 CITY_MAP = {"Warsaw": 0, "Berlin": 1, "London": 2}
 
 def _paths(city_slug: str):
+    """
+    Generates the file paths for a city's model and metrics.
+
+    Args:
+        city_slug (str): The slug of the city.
+
+    Returns:
+        tuple: A tuple containing the model path and metrics path.
+    """
     return (
         os.path.join(MODELS_DIR, f"{city_slug}.joblib"),
         os.path.join(MODELS_DIR, f"{city_slug}.metrics.json"),
     )
 
 def _slug(name: str) -> str:
+    """
+    Converts a city name to a URL-friendly slug.
+
+    Args:
+        name (str): The name of the city.
+
+    Returns:
+        str: The slugified city name.
+    """
     return name.lower().replace(" ", "-")
 
 async def train_model():
+    """
+    Trains a global machine learning model using weather data from the database.
+
+    The trained model and its metrics are saved to the file system.
+
+    Returns:
+        bool: True if the model was trained successfully, False otherwise.
+    """
     async with AsyncSessionLocal() as session:  # type: AsyncSession
         result = await session.execute(select(WeatherMeasurement))
         rows = result.scalars().all()
@@ -66,6 +92,21 @@ async def train_model():
     return True
 
 def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str) -> float:
+    """
+    Predicts the temperature for a given city at a specific time.
+
+    Args:
+        timestamp (float): The Unix timestamp for the prediction.
+        humidity (float): The humidity value.
+        wind_speed (float): The wind speed value.
+        city (str): The name of the city.
+
+    Returns:
+        float: The predicted temperature, or None if a prediction cannot be made.
+
+    Raises:
+        FileNotFoundError: If a trained model for the city does not exist.
+    """
     slug = _slug(city)
     model_path, _ = _paths(slug)
     if not os.path.exists(model_path):
@@ -81,6 +122,16 @@ def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str
     return float(pred)
 
 def train_model_for_city(city_name: str, df: pd.DataFrame):
+    """
+    Trains a machine learning model for a specific city.
+
+    Args:
+        city_name (str): The name of the city.
+        df (pd.DataFrame): A DataFrame containing historical weather data for the city.
+
+    Returns:
+        bool: True if the model was trained successfully, False otherwise.
+    """
     if df is None or df.empty:
         return False
     if len(df) < 10:
@@ -108,6 +159,16 @@ def train_model_for_city(city_name: str, df: pd.DataFrame):
     return True
 
 def load_model_for_city(city_name: str):
+    """
+    Loads a trained machine learning model and its metrics for a specific city.
+
+    Args:
+        city_name (str): The name of the city.
+
+    Returns:
+        tuple: A tuple containing the loaded model and its metrics, or (None, None)
+               if the model is not found.
+    """
     slug = _slug(city_name)
     model_path, metrics_path = _paths(slug)
     if not os.path.exists(model_path):
