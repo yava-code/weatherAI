@@ -71,10 +71,9 @@ def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model not trained")
     model = joblib.load(model_path)
-    city_code = CITY_MAP.get(city, 0)
     dt_struct = time.localtime(timestamp)
     hour = dt_struct.tm_hour
-    X = pd.DataFrame([[timestamp, hour, humidity, wind_speed, city_code]], columns=["timestamp", "hour", "humidity", "wind_speed", "city_code"])
+    X = pd.DataFrame([[timestamp, hour, humidity, wind_speed]], columns=["timestamp", "hour", "humidity", "wind_speed"])
     try:
         pred = model.predict(X)[0]
     except ValueError:
