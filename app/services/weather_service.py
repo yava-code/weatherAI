@@ -9,6 +9,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def _get_json(url: str, params: dict, retries: int = 3):
+    """
+    Asynchronously fetches JSON data from a URL with retries.
+
+    Args:
+        url (str): The URL to fetch data from.
+        params (dict): A dictionary of query parameters.
+        retries (int): The number of times to retry the request.
+
+    Returns:
+        dict: The JSON response as a dictionary, or None if the request fails.
+    """
     timeout = httpx.Timeout(10.0, connect=5.0, read=10.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         for i in range(retries):
@@ -25,6 +36,16 @@ async def _get_json(url: str, params: dict, retries: int = 3):
                 return None
 
 async def get_coordinates(city_name: str):
+    """
+    Fetches the geographical coordinates (latitude and longitude) for a city.
+
+    Args:
+        city_name (str): The name of the city.
+
+    Returns:
+        dict: A dictionary containing the latitude, longitude, and name of the city,
+              or None if the city is not found.
+    """
     js = await _get_json(
         "https://geocoding-api.open-meteo.com/v1/search",
         {"name": city_name, "count": 1, "language": "en"},
@@ -38,6 +59,17 @@ async def get_coordinates(city_name: str):
     return {"lat": item["latitude"], "lon": item["longitude"], "name": item.get("name", city_name)}
 
 async def fetch_current_weather(lat: float, lon: float):
+    """
+    Fetches the current weather for a given latitude and longitude.
+
+    Args:
+        lat (float): The latitude.
+        lon (float): The longitude.
+
+    Returns:
+        dict: A dictionary containing the current weather data (time, temperature,
+              humidity, and wind speed), or None if the request fails.
+    """
     js = await _get_json(
         "https://api.open-meteo.com/v1/forecast",
         {
@@ -58,6 +90,17 @@ async def fetch_current_weather(lat: float, lon: float):
     }
 
 async def fetch_historical_training_data(lat: float, lon: float):
+    """
+    Fetches historical weather data for the past 30 days for training purposes.
+
+    Args:
+        lat (float): The latitude.
+        lon (float): The longitude.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the historical weather data,
+                      or an empty DataFrame if the request fails.
+    """
     js = await _get_json(
         "https://api.open-meteo.com/v1/forecast",
         {

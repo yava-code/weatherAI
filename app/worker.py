@@ -16,10 +16,17 @@ REDIS_CACHE = redis.Redis.from_url(REDIS_URL)
 
 @celery_app.task
 def train_model_task():
+    """Celery task to train the global machine learning model."""
     asyncio.run(train_model())
 
 @celery_app.task
 def global_monitor_task():
+    """
+    Celery task that monitors a list of global cities.
+
+    For each city, it fetches weather data, makes predictions, and caches
+    the results in Redis.
+    """
     cities = ["London", "New York", "Tokyo", "Warsaw", "Berlin"]
     for city in cities:
         try:
@@ -49,6 +56,12 @@ def global_monitor_task():
 
 @celery_app.task
 def monitor_popular_cities_task():
+    """
+    Celery task that trains models for a list of popular cities.
+
+    This ensures that models for these cities are regularly updated with
+    the latest historical data.
+    """
     cities = ["London", "Warsaw", "Berlin", "Paris", "New York"]
     for city in cities:
         try:
