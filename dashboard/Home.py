@@ -41,7 +41,13 @@ try:
     redis_ok = True
 except Exception:
     redis_ok = False
-st.sidebar.success("DB Connected") if db_ok else st.sidebar.error("DB Unavailable")
-st.sidebar.success("Redis Connected") if redis_ok else st.sidebar.error("Redis Unavailable")
+if db_ok:
+    st.sidebar.success("DB Connected")
+else:
+    st.sidebar.error("DB Unavailable")
+if redis_ok:
+    st.sidebar.success("Redis Connected")
+else:
+    st.sidebar.error("Redis Unavailable")
 
 st.caption("Powered by MeteoMind Engine v1.0")

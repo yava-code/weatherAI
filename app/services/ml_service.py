@@ -65,7 +65,8 @@ async def train_model():
     return True
 
 def predict_temp(timestamp: float, humidity: float, wind_speed: float, city: str) -> float:
-    model_path, _ = _paths("global")
+    slug = _slug(city)
+    model_path, _ = _paths(slug)
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model not trained")
     model = joblib.load(model_path)

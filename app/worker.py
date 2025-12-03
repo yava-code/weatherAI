@@ -20,7 +20,7 @@ def train_model_task():
 
 @celery_app.task
 def global_monitor_task():
-    cities = (os.getenv("POPULAR_CITIES") or "London,Berlin,Warsaw").split(",")
+    cities = ["London", "New York", "Tokyo", "Warsaw", "Berlin"]
     for city in cities:
         city = city.strip()
         coords = asyncio.run(get_coordinates(city))
