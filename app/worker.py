@@ -14,22 +14,17 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 celery_app = Celery("meteo_mind", broker=REDIS_URL, backend=REDIS_URL)
 REDIS_CACHE = redis.Redis.from_url(REDIS_URL)
 
-@celery_app.task
-def train_model_task():
-    asyncio.run(train_model())
-
-@celery_app.task
-def global_monitor_task():
+async def run_global_monitor():
     cities = ["London", "New York", "Tokyo", "Warsaw", "Berlin"]
     for city in cities:
         try:
-            coords = asyncio.run(get_coordinates(city))
+            coords = await get_coordinates(city)
             if not coords:
                 continue
-            current = asyncio.run(fetch_current_weather(coords["lat"], coords["lon"]))
+            current = await fetch_current_weather(coords["lat"], coords["lon"])
             if not current:
                 continue
-            hist_df = asyncio.run(fetch_historical_training_data(coords["lat"], coords["lon"]))
+            hist_df = await fetch_historical_training_data(coords["lat"], coords["lon"])
             model, metrics = load_model_for_city(city)
             if model is None:
                 train_model_for_city(city, hist_df)
@@ -47,18 +42,29 @@ def global_monitor_task():
         except Exception:
             continue
 
-@celery_app.task
-def monitor_popular_cities_task():
+async def run_monitor_popular_cities():
     cities = ["London", "Warsaw", "Berlin", "Paris", "New York"]
     for city in cities:
         try:
-            coords = asyncio.run(get_coordinates(city))
+            coords = await get_coordinates(city)
             if not coords:
                 continue
-            hist_df = asyncio.run(fetch_historical_training_data(coords["lat"], coords["lon"]))
+            hist_df = await fetch_historical_training_data(coords["lat"], coords["lon"])
             train_model_for_city(city, hist_df)
         except Exception:
             continue
+
+@celery_app.task
+def train_model_task():
+    asyncio.run(train_model())
+
+@celery_app.task
+def global_monitor_task():
+    asyncio.run(run_global_monitor())
+
+@celery_app.task
+def monitor_popular_cities_task():
+    asyncio.run(run_monitor_popular_cities())
 
 celery_app.conf.beat_schedule = {
     "train-model-daily": {

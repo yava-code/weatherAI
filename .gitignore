@@ -20,3 +20,4 @@ site/
 .streamlit/
 *.sqlite3
 *.db
+.coverage

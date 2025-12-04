@@ -7,12 +7,14 @@ import time
 import httpx
 from app.services.weather_service import get_coordinates, fetch_current_weather, fetch_historical_training_data
 from app.services.ml_service import train_model_for_city, load_model_for_city, predict_temp
+from contextlib import asynccontextmanager
 
-app = FastAPI()
-
-@app.on_event("startup")
-async def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     await init_db()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def root():
